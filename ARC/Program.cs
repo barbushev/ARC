@@ -6,12 +6,13 @@ namespace ARC
 {
     class Program
     {
-        const string   devDescriptor = "Arduino";
-        const int      devBaudRate = 9600;
-        const int      devDataBits = 8;
-        const int      devReadTimeOut = 1000;  //ms
-        const Parity   devParity = Parity.None;
-        const StopBits devStopBits = StopBits.One;
+        const string   DEV_DESCRIPTOR = "Arduino";
+        const string   DEV_FAULT_RESP = "FLT";
+        const int      DEV_BAUD_RATE = 9600;
+        const int      DEV_DATA_BITS = 8;
+        const int      DEV_READ_TIMEOUT = 1000;  //ms
+        const Parity   DEV_PARITY = Parity.None;
+        const StopBits DEV_STOP_BITS = StopBits.One;
         
         public enum ReturnCode
         {
@@ -29,8 +30,11 @@ namespace ARC
 
             if (args == null || args.Length != 1)
             {
-                Console.WriteLine("Usage: arc.exe cmd");
-                Console.WriteLine("cmd syntax L#, where (L)evel is H or L, and # is pin # 2 to 19");
+                Console.WriteLine("ARC - Arduino Relay Control");
+                Console.WriteLine();
+                Console.WriteLine("Usage: arc.exe S#");
+                Console.WriteLine();
+                Console.WriteLine("Where (S)tate is (H)igh or (L)ow, and # is pin # 2 to 19");
                 Console.WriteLine("Example \"arc.exe L2\" will set pin 2 Low, and \"arc.exe H2\" will set pin 2 high.");
                 Console.WriteLine("Note: pins 0 and 1 are reserved for communication.");
                 ret = ReturnCode.ARC_WRONG_ARGS;
@@ -74,24 +78,28 @@ namespace ARC
 
         private static ReturnCode ExecuteCommand(string comPort, string cmd)
         {
-            SerialPort arcSerial = new SerialPort(comPort, devBaudRate, devParity, devDataBits, devStopBits);
-            arcSerial.ReadTimeout = devReadTimeOut;
+            SerialPort arcSerial = new SerialPort(comPort, DEV_BAUD_RATE, DEV_PARITY, DEV_DATA_BITS, DEV_STOP_BITS);
+            arcSerial.ReadTimeout = DEV_READ_TIMEOUT;
             arcSerial.NewLine = "\n";
              
             try
             {
                 arcSerial.Open();
-                arcSerial.WriteLine(comPort);
+                arcSerial.WriteLine(cmd);
                 string resp = arcSerial.ReadLine();
-                Console.WriteLine(resp);
+                resp = resp.TrimEnd();
                 arcSerial.Close();
+                                
+                if (resp ==  DEV_FAULT_RESP)                    
+                    return ReturnCode.ARC_COMMUNICATION_FAIL;
+
+                if (resp == cmd)
+                    return ReturnCode.OK;
             }
             catch
-            { 
-                return ReturnCode.ARC_COMMUNICATION_FAIL;
-            }
+            { }
 
-            return ReturnCode.OK;
+            return ReturnCode.ARC_COMMUNICATION_FAIL;
         }
 
         private static string FindDevicePort()
@@ -107,7 +115,7 @@ namespace ARC
                     string desc = item["Description"].ToString();
                     string deviceId = item["DeviceID"].ToString();
 
-                    if (desc.Contains(devDescriptor))
+                    if (desc.Contains(DEV_DESCRIPTOR))
                     {
                         return deviceId;
                     }
