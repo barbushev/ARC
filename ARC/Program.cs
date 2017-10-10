@@ -79,9 +79,11 @@ namespace ARC
         private static ReturnCode ExecuteCommand(string comPort, string cmd)
         {
             SerialPort arcSerial = new SerialPort(comPort, DEV_BAUD_RATE, DEV_PARITY, DEV_DATA_BITS, DEV_STOP_BITS);
+            arcSerial.DtrEnable = true;
+            arcSerial.RtsEnable = true;
             arcSerial.ReadTimeout = DEV_READ_TIMEOUT;
             arcSerial.NewLine = "\n";
-             
+
             try
             {
                 arcSerial.Open();
@@ -89,7 +91,7 @@ namespace ARC
                 string resp = arcSerial.ReadLine();
                 resp = resp.TrimEnd();
                 arcSerial.Close();
-                                
+               
                 if (resp ==  DEV_FAULT_RESP)                    
                     return ReturnCode.ARC_COMMUNICATION_FAIL;
 
